@@ -30,6 +30,7 @@ archive:
   - README*
   - changelog*
   - CHANGELOG*
+  - *.sql
 fpm:
   bindir: /usr/local/bin
 snapshot:
