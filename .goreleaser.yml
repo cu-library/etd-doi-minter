@@ -30,7 +30,7 @@ archive:
   - README*
   - changelog*
   - CHANGELOG*
-  - *.sql
+  - export-from-curve.sql
 fpm:
   bindir: /usr/local/bin
 snapshot:
