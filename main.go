@@ -58,6 +58,8 @@ func main() {
 
 	lineNumber := 0
 
+	dois := make(map[string]bool)
+
 	for {
 		lineNumber = lineNumber + 1
 
@@ -138,6 +140,12 @@ func main() {
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
 		splitUUID := strings.Split(dissertation.UUID, "-")
 		dissertation.DOI = *prefix + "-" + dissertation.Year + "-" + splitUUID[len(splitUUID)-1]
+
+		if _, ok := dois[dissertation.DOI]; ok {
+			log.Fatalln("DOI collision!")
+		} else {
+			dois[dissertation.DOI] = true
+		}
 
 		templateData.BodyData.Dissertations = append(templateData.BodyData.Dissertations, dissertation)
 	}
