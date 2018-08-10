@@ -80,13 +80,13 @@ func main() {
 
 		dissertation.Title = strings.TrimSpace(record[0])
 		if dissertation.Title == "" {
-			log.Fatalln("Empty title!")
+			log.Fatalf("On line %v: Empty title!", lineNumber)
 		}
 
 		mononymous := false
 		splitName := strings.Split(record[1], ",")
 		if len(splitName) < 2 {
-			log.Println(record[1])
+			log.Printf("Found record with only one name: %v\n", record[1])
 			if !askForConfirmation("Mononymous name?") {
 				log.Fatalln("Exit!")
 			} else {
@@ -99,34 +99,34 @@ func main() {
 		} else {
 			dissertation.Surname = strings.TrimSpace(splitName[0])
 			if dissertation.Surname == "" {
-				log.Fatalln("Empty Surname!")
+				log.Fatalf("On line %v: Empty Surname!\n", lineNumber)
 			}
 
 			restOfName := strings.TrimSpace(splitName[1])
 			dissertation.GivenName = strings.TrimSpace(strings.Split(restOfName, " ")[0])
 			if dissertation.GivenName == "" {
-				log.Fatalln("Empty GivenName!")
+				log.Fatalf("On line %v: Empty GivenName!\n", lineNumber)
 			}
 		}
 
 		if record[2] == "" {
-			log.Fatalln("Empty Year!")
+			log.Fatalf("On line %v: Empty Year!\n", lineNumber)
 		}
 		dissertation.Year = record[2][0:4]
 		value, err := strconv.Atoi(dissertation.Year)
 		if err != nil {
-			log.Fatalln("Couldn't convert Year to int value!")
+			log.Fatalf("On line %v: Couldn't convert Year to int value!\n", lineNumber)
 		}
 		if value < 1930 {
-			log.Fatalln("Likely an invalid year")
+			log.Fatalf("On line %v: Likely an invalid year\n", lineNumber)
 		}
-		if value > 2099 {
-			log.Fatalln("Likely an invalid year")
+		if value > 2999 {
+			log.Fatalf("On line %v: Likely an invalid year\n", lineNumber)
 		}
 
 		dissertation.DegreeName = strings.TrimSpace(record[3])
 		if dissertation.DegreeName == "" {
-			log.Fatalln("Empty DegreeName!")
+			log.Fatalf("On line %v: Empty DegreeName!\n", lineNumber)
 		}
 
 		findProquestIDRegexp := regexp.MustCompile(`pqdiss\: (\w+)\|http`)
@@ -137,7 +137,7 @@ func main() {
 
 		dissertation.UUID = strings.TrimSpace(record[5])
 		if dissertation.UUID == "" {
-			log.Fatalln("Empty UUID!")
+			log.Fatalf("On line %v: Empty UUID!", lineNumber)
 		}
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
