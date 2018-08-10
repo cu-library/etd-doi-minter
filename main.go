@@ -50,7 +50,7 @@ func main() {
 		runAtTime = time.Unix(0, *timeFlag)
 	}
 
-	entropy := rand.New(rand.NewSource(runAtTime.Unix()))
+	entropy := rand.New(rand.NewSource(runAtTime.UnixNano()))
 
 	// Open the ETD export from CURVE.
 	etdCSVFile, err := os.Open(*etdCSVFilePath)
