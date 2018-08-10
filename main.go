@@ -71,7 +71,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		log.Println(lineNumber)
+		// If this record already has a DOI, skip it
+		if strings.Contains(record[4], "https://doi.org") {
+			continue
+		}
 
 		dissertation := new(Dissertation)
 
