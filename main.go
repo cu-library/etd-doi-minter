@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"math/rand"
+	"github.com/oklog/ulid"
 )
 
 var etdCSVFilePath = flag.String("in", "etd-output.csv", "Path to etd CSV file.")
@@ -22,6 +24,7 @@ var prefix = flag.String("prefix", "", "DOI prefix.")
 var depositorName = flag.String("depositor", "", "Name of the organization registering the DOIs. The name placed in this element should match the name under which a depositing organization has registered with CrossRef.")
 var depositorEmail = flag.String("email", "", "Email address to which batch success and/or error messages are sent. It is recommended that this address be unique to a position within the organization submitting data (e.g. \"doi@...\") rather than unique to a person. In this way, the alias for delivery of this mail can be changed as responsibility for submission of DOI data within the organization changes from one person to another.")
 var registrant = flag.String("registrant", "", "The organization that owns the information being registered.")
+var timeFlag = flag.Int64("timestamp", 0, "An int64 representation of the nanoseconds since the epoch. Used to seed the random number generator, generate DOIs, and create the DOI submission batch and timestamp.")
 
 func main() {
 	flag.Parse()
@@ -39,6 +42,16 @@ func main() {
 		log.Fatalln("prefix required")
 	}
 
+	var runAtTime time.Time
+
+	if *timeFlag == 0 {
+		runAtTime = time.Now().UTC()
+	} else {
+		runAtTime = time.Unix(0, *timeFlag)
+	}
+
+	entropy := rand.New(rand.NewSource(runAtTime.Unix()))
+
 	// Open the ETD export from CURVE.
 	etdCSVFile, err := os.Open(*etdCSVFilePath)
 	if err != nil {
@@ -49,8 +62,8 @@ func main() {
 	templateData := new(TemplateData)
 
 	templateData.HeadData = HeadData{
-		DOIBatch:       time.Now().UTC().Unix(),
-		Timestamp:      time.Now().UTC().UnixNano(),
+		DOIBatch:       runAtTime.Unix(),
+		Timestamp:      runAtTime.UnixNano(),
 		DepositorName:  *depositorName,
 		DepositorEmail: *depositorEmail,
 		Registrant:     *registrant,
@@ -141,8 +154,10 @@ func main() {
 		}
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
-		splitUUID := strings.Split(dissertation.UUID, "-")
-		dissertation.DOI = *prefix + "-" + dissertation.Year + "-" + splitUUID[len(splitUUID)-1]
+
+		// We throw away the first digit (won't change until 3084-12-12T12:41:28.832000) and the last ten digits (50 bits) of entropy.
+		// This leads to a shorter identifier, but higher change of collision. Keep track of DOIs and exit if collision happens.
+		dissertation.DOI = *prefix + strings.ToLower(ulid.MustNew(ulid.Timestamp(runAtTime), entropy).String())[1:16]
 
 		if _, ok := dois[dissertation.DOI]; ok {
 			log.Fatalln("DOI collision!")
