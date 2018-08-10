@@ -5,16 +5,16 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"github.com/oklog/ulid"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
-	"math/rand"
-	"github.com/oklog/ulid"
 )
 
 var etdCSVFilePath = flag.String("in", "etd-output.csv", "Path to etd CSV file.")
