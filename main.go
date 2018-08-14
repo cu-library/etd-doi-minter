@@ -155,9 +155,7 @@ func main() {
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
 
-		// We throw away the first digit (won't change until 3084-12-12T12:41:28.832000) and the last ten digits (50 bits) of entropy.
-		// This leads to a shorter identifier, but higher change of collision. Keep track of DOIs and exit if collision happens.
-		dissertation.DOI = *prefix + strings.ToLower(ulid.MustNew(ulid.Timestamp(runAtTime), entropy).String())[1:16]
+		dissertation.DOI = *prefix + ulid.MustNew(ulid.Timestamp(runAtTime), entropy).String()
 
 		if _, ok := dois[dissertation.DOI]; ok {
 			log.Fatalln("DOI collision!")
