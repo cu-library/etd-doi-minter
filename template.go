@@ -70,7 +70,7 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 {{- if .ProQuestID}}
 			<publisher_item>
 				<identifier id_type="dai">{{.ProQuestID}}</identifier>
-			<publisher_item>{{end}}
+			</publisher_item>{{end}}
 			<doi_data>
 				<doi>{{.DOI}}</doi>
 				<resource>{{.URI}}</resource>
