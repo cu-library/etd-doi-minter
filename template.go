@@ -2,81 +2,70 @@ package main
 
 // TemplateData contains the data to use when creating the template
 type TemplateData struct {
-	HeadData
-	BodyData
+	XMLName           string   `xml:"doi_batch"`
+	Version           string   `xml:"version,attr"`
+	Xmlns             string   `xml:"xmlns,attr"`
+	Xmlnsxsi          string   `xml:"xmlns:xsi,attr"`
+	Xsischemalocation string   `xml:"xsi:schemaLocation,attr"`
+	Head              HeadData `xml:"head"`
+	Body              BodyData `xml:"body"`
+}
+
+func NewTemplateData() *TemplateData {
+	return &TemplateData{
+		Version:           "4.4.1",
+		Xmlns:             "http://www.crossref.org/schema/4.4.1",
+		Xmlnsxsi:          "http://www.w3.org/2001/XMLSchema-instance",
+		Xsischemalocation: "http://www.crossref.org/schema/4.4.1 http://www.crossref.org/schemas/crossref4.4.1.xsd",
+	}
 }
 
 // HeadData contains the data to use in the header of the template
 type HeadData struct {
-	DOIBatch       int64
-	Timestamp      int64
-	DepositorName  string
-	DepositorEmail string
-	Registrant     string
+	DOIBatch       int64  `xml:"doi_batch_id"`
+	Timestamp      int64  `xml:"timestamp"`
+	DepositorName  string `xml:"depositor>depositor_name"`
+	DepositorEmail string `xml:"depositor>email_address"`
+	Registrant     string `xml:"registrant"`
 }
 
 // BodyData contains the data to use in the body of the template
 type BodyData struct {
-	Dissertations []*Dissertation
+	Dissertations []*Dissertation `xml:"dissertation"`
 }
 
 // Dissertation contains the data for each dissertation
 type Dissertation struct {
-	Title      string
-	GivenName  string
-	Surname    string
-	Year       string
-	DegreeName string
-	ProQuestID string
-	DOI        string
-	URI        string
-	UUID       string
+	Person struct {
+		Sequence        string `xml:"sequence,attr"`
+		ContributorRole string `xml:"contributor_role,attr"`
+		GivenName       string `xml:"given_name"`
+		Surname         string `xml:"surname"`
+	} `xml:"person_name"`
+	Title        string `xml:"titles>title"`
+	ApprovalDate struct {
+		Year      string `xml:"year"`
+		MediaType string `xml:"media_type,attr"`
+	} `xml:"approval_date"`
+	InstitutionName  string `xml:"institution>institution_name"`
+	InstitutionPlace string `xml:"institution>institution_place"`
+	DegreeName       string `xml:"degree"`
+	Identifier       struct {
+		IdType string `xml:"id_type,attr"`
+		Value  string `xml:",chardata"`
+	} `xml:"publisher_item>identifier,omitempty"`
+	DOI  string `xml:"doi_data>doi"`
+	URI  string `xml:"doi_data>resource"`
+	UUID string `xml:"-"`
 }
 
-const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
-<doi_batch version="4.4.1"
-           xmlns="http://www.crossref.org/schema/4.4.1"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.crossref.org/schema/4.4.1 http://www.crossref.org/schemas/crossref4.4.1.xsd">
-	<head>
-		{{- with .HeadData}}
-		<doi_batch_id>{{.DOIBatch}}</doi_batch_id>
-		<timestamp>{{.Timestamp}}</timestamp>
-		<depositor>
-			<depositor_name>{{.DepositorName}}</depositor_name>
-			<email_address>{{.DepositorEmail}}</email_address>
-		</depositor>
-		<registrant>{{.Registrant}}</registrant>
-		{{- end}}
-	</head>
-	<body>
-		{{- range .Dissertations }}
-		<dissertation>
-			<person_name sequence="first" contributor_role="author">
-{{- if .GivenName}}{{"\n"}}				<given_name>{{.GivenName}}</given_name>{{end}}
-				<surname>{{.Surname}}</surname>
-			</person_name>
-			<titles>
-				<title>{{.Title}}</title>
-			</titles>
-			<approval_date media_type="electronic">
-				<year>{{.Year}}</year>
-			</approval_date>
-			<institution>
-				<institution_name>Carleton University</institution_name>
-				<institution_place>Ottawa, Ontario</institution_place>
-			</institution>
-			<degree>{{.DegreeName}}</degree>
-{{- if .ProQuestID}}
-			<publisher_item>
-				<identifier id_type="dai">{{.ProQuestID}}</identifier>
-			</publisher_item>{{end}}
-			<doi_data>
-				<doi>{{.DOI}}</doi>
-				<resource>{{.URI}}</resource>
-			</doi_data>
-		</dissertation>
-		{{- end}}
-	</body>
-</doi_batch>
-`
+func NewDissertation() *Dissertation {
+	d := &Dissertation{
+		InstitutionName:  "Carleton University",
+		InstitutionPlace: "Ottawa, Ontario",
+	}
+	d.Person.Sequence = "first"
+	d.Person.ContributorRole = "author"
+	d.ApprovalDate.MediaType = "electronic"
+	return d
+}

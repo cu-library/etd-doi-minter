@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -68,9 +68,10 @@ func main() {
 			continue
 		}
 
-		dissertation := new(Dissertation)
+		dissertation := NewDissertation()
 
 		dissertation.Title = strings.TrimSpace(record[0])
+
 		if dissertation.Title == "" {
 			log.Fatalf("On line %v: Empty title!", lineNumber)
 		}
@@ -87,16 +88,16 @@ func main() {
 		}
 
 		if mononymous {
-			dissertation.Surname = strings.TrimSpace(splitName[0])
+			dissertation.Person.Surname = strings.TrimSpace(splitName[0])
 		} else {
-			dissertation.Surname = strings.TrimSpace(splitName[0])
-			if dissertation.Surname == "" {
+			dissertation.Person.Surname = strings.TrimSpace(splitName[0])
+			if dissertation.Person.Surname == "" {
 				log.Fatalf("On line %v: Empty Surname!\n", lineNumber)
 			}
 
 			restOfName := strings.TrimSpace(splitName[1])
-			dissertation.GivenName = strings.TrimSpace(strings.Split(restOfName, " ")[0])
-			if dissertation.GivenName == "" {
+			dissertation.Person.GivenName = strings.TrimSpace(strings.Split(restOfName, " ")[0])
+			if dissertation.Person.GivenName == "" {
 				log.Fatalf("On line %v: Empty GivenName!\n", lineNumber)
 			}
 		}
@@ -104,8 +105,8 @@ func main() {
 		if record[2] == "" {
 			log.Fatalf("On line %v: Empty Year!\n", lineNumber)
 		}
-		dissertation.Year = record[2][0:4]
-		value, err := strconv.Atoi(dissertation.Year)
+		dissertation.ApprovalDate.Year = record[2][0:4]
+		value, err := strconv.Atoi(dissertation.ApprovalDate.Year)
 		if err != nil {
 			log.Fatalf("On line %v: Couldn't convert Year to int value!\n", lineNumber)
 		}
@@ -124,7 +125,8 @@ func main() {
 		findProquestIDRegexp := regexp.MustCompile(`pqdiss\: (\w+)\|http`)
 		regexpResult := findProquestIDRegexp.FindStringSubmatch(record[4])
 		if len(regexpResult) > 1 {
-			dissertation.ProQuestID = regexpResult[1]
+			dissertation.Identifier.Value = regexpResult[1]
+			dissertation.Identifier.IdType = "dai"
 		}
 
 		dissertation.UUID = strings.TrimSpace(record[5])
@@ -134,7 +136,7 @@ func main() {
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
 
-		dissertation.DOI = fmt.Sprintf("%v/etd/%v-%05v", *prefix, dissertation.Year, lineNumber+*starting-1)
+		dissertation.DOI = fmt.Sprintf("%v/etd/%v-%05v", *prefix, dissertation.ApprovalDate.Year, lineNumber+*starting-1)
 
 		if _, ok := dois[dissertation.DOI]; ok {
 			log.Fatalln("DOI collision!")
@@ -151,31 +153,31 @@ func main() {
 	batches := []*TemplateData{}
 
 	for i := 0; i < fullBatches; i++ {
-		templateData := new(TemplateData)
+		templateData := NewTemplateData()
 		runAt := time.Now().UTC()
-		templateData.HeadData = HeadData{
+		templateData.Head = HeadData{
 			DOIBatch:       runAt.Unix(),
 			Timestamp:      runAt.UnixNano(),
 			DepositorName:  *depositorName,
 			DepositorEmail: *depositorEmail,
 			Registrant:     *registrant,
 		}
-		templateData.BodyData.Dissertations = dissertations[i*5000 : ((i + 1) * 5000)]
+		templateData.Body.Dissertations = dissertations[i*5000 : ((i + 1) * 5000)]
 		batches = append(batches, templateData)
 		time.Sleep(1 * time.Second)
 	}
 
 	if remainder != 0 {
-		templateData := new(TemplateData)
+		templateData := NewTemplateData()
 		runAt := time.Now().UTC()
-		templateData.HeadData = HeadData{
+		templateData.Head = HeadData{
 			DOIBatch:       runAt.Unix(),
 			Timestamp:      runAt.UnixNano(),
 			DepositorName:  *depositorName,
 			DepositorEmail: *depositorEmail,
 			Registrant:     *registrant,
 		}
-		templateData.BodyData.Dissertations = dissertations[fullBatches*5000:]
+		templateData.Body.Dissertations = dissertations[fullBatches*5000:]
 		batches = append(batches, templateData)
 	}
 
@@ -186,8 +188,15 @@ func main() {
 		}
 		defer output.Close()
 
-		t := template.Must(template.New("template").Parse(templateSkeleton))
-		err = t.Execute(output, &templateData)
+		header := `<?xml version="1.0" encoding="UTF-8"?>` + "\n"
+		_, err = output.WriteString(header)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		enc := xml.NewEncoder(output)
+		enc.Indent("", "\t")
+		err = enc.Encode(templateData)
 		if err != nil {
 			log.Fatalln(err)
 		}
