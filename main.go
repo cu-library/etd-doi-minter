@@ -160,7 +160,7 @@ func main() {
 			DepositorEmail: *depositorEmail,
 			Registrant:     *registrant,
 		}
-		templateData.BodyData.Dissertations = dissertations[i*5000:((i+1)*5000)]
+		templateData.BodyData.Dissertations = dissertations[i*5000 : ((i + 1) * 5000)]
 		batches = append(batches, templateData)
 		time.Sleep(1 * time.Second)
 	}
