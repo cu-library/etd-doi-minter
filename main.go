@@ -5,10 +5,8 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/oklog/ulid"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -24,7 +22,8 @@ var prefix = flag.String("prefix", "", "DOI prefix.")
 var depositorName = flag.String("depositor", "", "Name of the organization registering the DOIs. The name placed in this element should match the name under which a depositing organization has registered with CrossRef.")
 var depositorEmail = flag.String("email", "", "Email address to which batch success and/or error messages are sent. It is recommended that this address be unique to a position within the organization submitting data (e.g. \"doi@...\") rather than unique to a person. In this way, the alias for delivery of this mail can be changed as responsibility for submission of DOI data within the organization changes from one person to another.")
 var registrant = flag.String("registrant", "", "The organization that owns the information being registered.")
-var timeFlag = flag.Int64("timestamp", 0, "An int64 representation of the nanoseconds since the epoch. Used to seed the random number generator, generate DOIs, and create the DOI submission batch and timestamp.")
+var timeFlag = flag.Int64("timestamp", 0, "An int64 representation of the nanoseconds since the epoch. Used to set the DOI submission batch and timestamp.")
+var starting = flag.Int("starting", 1, "The starting value for the incrementing integer section of the DOI pattern 'prefix/etd/year-intvalue'")
 
 func main() {
 	flag.Parse()
@@ -49,8 +48,6 @@ func main() {
 	} else {
 		runAtTime = time.Unix(0, *timeFlag)
 	}
-
-	entropy := rand.New(rand.NewSource(runAtTime.UnixNano()))
 
 	// Open the ETD export from CURVE.
 	etdCSVFile, err := os.Open(*etdCSVFilePath)
@@ -155,7 +152,7 @@ func main() {
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
 
-		dissertation.DOI = *prefix + ulid.MustNew(ulid.Timestamp(runAtTime), entropy).String()
+		dissertation.DOI = fmt.Sprintf("%v/etd/%v-%05v", *prefix, dissertation.Year, lineNumber+*starting-1)
 
 		if _, ok := dois[dissertation.DOI]; ok {
 			log.Fatalln("DOI collision!")
