@@ -125,8 +125,10 @@ func main() {
 		findProquestIDRegexp := regexp.MustCompile(`pqdiss\: (\w+)\|http`)
 		regexpResult := findProquestIDRegexp.FindStringSubmatch(record[4])
 		if len(regexpResult) > 1 {
-			dissertation.Identifier.Value = regexpResult[1]
-			dissertation.Identifier.IdType = "dai"
+			dissertation.Identifier = &Identifier{
+				Value:  regexpResult[1],
+				IdType: "dai",
+			}
 		}
 
 		dissertation.UUID = strings.TrimSpace(record[5])

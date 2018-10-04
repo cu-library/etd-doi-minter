@@ -47,16 +47,19 @@ type Dissertation struct {
 		Year      string `xml:"year"`
 		MediaType string `xml:"media_type,attr"`
 	} `xml:"approval_date"`
-	InstitutionName  string `xml:"institution>institution_name"`
-	InstitutionPlace string `xml:"institution>institution_place"`
-	DegreeName       string `xml:"degree"`
-	Identifier       struct {
-		IdType string `xml:"id_type,attr"`
-		Value  string `xml:",chardata"`
-	} `xml:"publisher_item>identifier,omitempty"`
-	DOI  string `xml:"doi_data>doi"`
-	URI  string `xml:"doi_data>resource"`
-	UUID string `xml:"-"`
+	InstitutionName  string      `xml:"institution>institution_name"`
+	InstitutionPlace string      `xml:"institution>institution_place"`
+	DegreeName       string      `xml:"degree"`
+	Identifier       *Identifier `xml:"publisher_item>identifier,omitempty"`
+	DOI              string      `xml:"doi_data>doi"`
+	URI              string      `xml:"doi_data>resource"`
+	UUID             string      `xml:"-"`
+}
+
+// Identifier is here to fix XML marshaling.
+type Identifier struct {
+	IdType string `xml:"id_type,attr"`
+	Value  string `xml:",chardata"`
 }
 
 func NewDissertation() *Dissertation {
