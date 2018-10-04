@@ -66,6 +66,6 @@ func NewDissertation() *Dissertation {
 	}
 	d.Person.Sequence = "first"
 	d.Person.ContributorRole = "author"
-	d.ApprovalDate.MediaType = "electronic"
+	d.ApprovalDate.MediaType = "online"
 	return d
 }
