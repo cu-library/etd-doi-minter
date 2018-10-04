@@ -16,13 +16,10 @@ import (
 )
 
 var etdCSVFilePath = flag.String("in", "etd-output.csv", "Path to etd CSV file.")
-var reportFilePath = flag.String("report", "report.csv", "Path to which the report csv file will be written.")
-var crossrefOutputFilePath = flag.String("out", "crossref.xml", "Path to which the output XML file will be written.")
 var prefix = flag.String("prefix", "", "DOI prefix.")
 var depositorName = flag.String("depositor", "", "Name of the organization registering the DOIs. The name placed in this element should match the name under which a depositing organization has registered with CrossRef.")
 var depositorEmail = flag.String("email", "", "Email address to which batch success and/or error messages are sent. It is recommended that this address be unique to a position within the organization submitting data (e.g. \"doi@...\") rather than unique to a person. In this way, the alias for delivery of this mail can be changed as responsibility for submission of DOI data within the organization changes from one person to another.")
 var registrant = flag.String("registrant", "", "The organization that owns the information being registered.")
-var timeFlag = flag.Int64("timestamp", 0, "An int64 representation of the nanoseconds since the epoch. Used to set the DOI submission batch and timestamp.")
 var starting = flag.Int("starting", 1, "The starting value for the incrementing integer section of the DOI pattern 'prefix/etd/year-intvalue'")
 
 func main() {
@@ -41,34 +38,19 @@ func main() {
 		log.Fatalln("prefix required")
 	}
 
-	var runAtTime time.Time
-
-	if *timeFlag == 0 {
-		runAtTime = time.Now().UTC()
-	} else {
-		runAtTime = time.Unix(0, *timeFlag)
-	}
+	dois := make(map[string]bool)
 
 	// Open the ETD export from CURVE.
 	etdCSVFile, err := os.Open(*etdCSVFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	etdCSVReader := csv.NewReader(etdCSVFile)
 
-	templateData := new(TemplateData)
-
-	templateData.HeadData = HeadData{
-		DOIBatch:       runAtTime.Unix(),
-		Timestamp:      runAtTime.UnixNano(),
-		DepositorName:  *depositorName,
-		DepositorEmail: *depositorEmail,
-		Registrant:     *registrant,
-	}
+	dissertations := []*Dissertation{}
 
 	lineNumber := 0
-
-	dois := make(map[string]bool)
 
 	for {
 		lineNumber = lineNumber + 1
@@ -160,26 +142,62 @@ func main() {
 			dois[dissertation.DOI] = true
 		}
 
-		templateData.BodyData.Dissertations = append(templateData.BodyData.Dissertations, dissertation)
+		dissertations = append(dissertations, dissertation)
 	}
 
-	output, err := os.Create(*crossrefOutputFilePath)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer output.Close()
+	fullBatches := len(dissertations) / 5000
+	remainder := len(dissertations) % 5000
 
-	report, err := os.Create(*reportFilePath)
+	batches := []*TemplateData{}
+
+	for i := 0; i < fullBatches; i++ {
+		templateData := new(TemplateData)
+		runAt := time.Now().UTC()
+		templateData.HeadData = HeadData{
+			DOIBatch:       runAt.Unix(),
+			Timestamp:      runAt.UnixNano(),
+			DepositorName:  *depositorName,
+			DepositorEmail: *depositorEmail,
+			Registrant:     *registrant,
+		}
+		templateData.BodyData.Dissertations = dissertations[i*5000:((i+1)*5000)]
+		batches = append(batches, templateData)
+		time.Sleep(1 * time.Second)
+	}
+
+	if remainder != 0 {
+		templateData := new(TemplateData)
+		runAt := time.Now().UTC()
+		templateData.HeadData = HeadData{
+			DOIBatch:       runAt.Unix(),
+			Timestamp:      runAt.UnixNano(),
+			DepositorName:  *depositorName,
+			DepositorEmail: *depositorEmail,
+			Registrant:     *registrant,
+		}
+		templateData.BodyData.Dissertations = dissertations[fullBatches*5000:]
+		batches = append(batches, templateData)
+	}
+
+	for i, templateData := range batches {
+		output, err := os.Create(fmt.Sprintf("%v-crossref-%v.xml", time.Now().UTC().Format("2006-01-02"), i+1))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		defer output.Close()
+
+		t := template.Must(template.New("template").Parse(templateSkeleton))
+		err = t.Execute(output, &templateData)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	report, err := os.Create(fmt.Sprintf("%v-report.csv", time.Now().UTC().Format("2006-01-02")))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer report.Close()
-
-	t := template.Must(template.New("template").Parse(templateSkeleton))
-	err = t.Execute(output, &templateData)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
 	w := csv.NewWriter(report)
 
@@ -188,7 +206,7 @@ func main() {
 		log.Fatalln("Error writing to csv:", err)
 	}
 
-	for _, dissertation := range templateData.BodyData.Dissertations {
+	for _, dissertation := range dissertations {
 		err = w.Write([]string{dissertation.UUID, dissertation.DOI})
 		if err != nil {
 			log.Fatalln("Error writing to csv:", err)
