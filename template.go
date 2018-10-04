@@ -39,7 +39,7 @@ type Dissertation struct {
 	Person struct {
 		Sequence        string `xml:"sequence,attr"`
 		ContributorRole string `xml:"contributor_role,attr"`
-		GivenName       string `xml:"given_name"`
+		GivenName       string `xml:"given_name,omitempty"`
 		Surname         string `xml:"surname"`
 	} `xml:"person_name"`
 	Title        string `xml:"titles>title"`
