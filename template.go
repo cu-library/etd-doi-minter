@@ -34,9 +34,9 @@ type Dissertation struct {
 }
 
 const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
-<doi_batch version="4.4.1" 
+<doi_batch version="4.4.1"
            xmlns="http://www.crossref.org/schema/4.4.1"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.crossref.org/schema/4.4.1 http://www.crossref.org/schemas/crossref4.4.1.xsd">
 	<head>
 		{{- with .HeadData}}
@@ -63,7 +63,7 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 				<year>{{.Year}}</year>
 			</approval_date>
 			<institution>
-				<institution_name>Carleton University</institution>
+				<institution_name>Carleton University</institution_name>
 				<institution_place>Ottawa, Ontario</institution_place>
 			</institution>
 			<degree>{{.DegreeName}}</degree>
