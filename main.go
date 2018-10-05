@@ -51,6 +51,7 @@ func main() {
 	dissertations := []*Dissertation{}
 
 	lineNumber := 0
+	identifier := *starting
 
 	for {
 		lineNumber = lineNumber + 1
@@ -138,7 +139,7 @@ func main() {
 
 		dissertation.URI = "https://curve.carleton.ca/" + dissertation.UUID
 
-		dissertation.DOI = fmt.Sprintf("%v/etd/%v-%05v", *prefix, dissertation.ApprovalDate.Year, lineNumber+*starting-1)
+		dissertation.DOI = fmt.Sprintf("%v/etd/%v-%05v", *prefix, dissertation.ApprovalDate.Year, identifier)
 
 		if _, ok := dois[dissertation.DOI]; ok {
 			log.Fatalln("DOI collision!")
@@ -147,6 +148,8 @@ func main() {
 		}
 
 		dissertations = append(dissertations, dissertation)
+
+		identifier++
 	}
 
 	fullBatches := len(dissertations) / 5000
@@ -212,7 +215,7 @@ func main() {
 
 	w := csv.NewWriter(report)
 
-	err = w.Write([]string{"URI", "DOI"})
+	err = w.Write([]string{"uuid", "doi"})
 	if err != nil {
 		log.Fatalln("Error writing to csv:", err)
 	}
