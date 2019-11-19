@@ -128,7 +128,7 @@ func main() {
 		if len(regexpResult) > 1 {
 			dissertation.Identifier = &Identifier{
 				Value:  regexpResult[1],
-				IdType: "dai",
+				IDType: "dai",
 			}
 		}
 

@@ -11,6 +11,7 @@ type TemplateData struct {
 	Body              BodyData `xml:"body"`
 }
 
+// NewTemplateData returns template data with some fields already set to the correct values.
 func NewTemplateData() *TemplateData {
 	return &TemplateData{
 		Version:           "4.4.1",
@@ -58,10 +59,11 @@ type Dissertation struct {
 
 // Identifier is here to fix XML marshaling.
 type Identifier struct {
-	IdType string `xml:"id_type,attr"`
+	IDType string `xml:"id_type,attr"`
 	Value  string `xml:",chardata"`
 }
 
+// NewDissertation returns a dissertation with some fields already set to the correct values.
 func NewDissertation() *Dissertation {
 	d := &Dissertation{
 		InstitutionName:  "Carleton University",
